@@ -1051,7 +1051,7 @@ namespace CharacterFloatInfo
         }
 
         //名誉
-        public static string GetFame(int id) => ActorMenu.instance.Color7(GetActorFame(id));
+        public static string GetFame(int id) => DateFile.instance.GetActorFameText(id);
         public static int GetActorFame(int id) => DateFile.instance.GetActorFame(id);
 
         //立场

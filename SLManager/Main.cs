@@ -2,7 +2,7 @@ using Harmony12;
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using JetBrains.Annotations;
+using System;
 using UnityEngine;
 using UnityModManagerNet;
 
@@ -24,8 +24,7 @@ namespace Sth4nothing.SLManager
     {
         public static bool Enabled { get; private set; }
         public static bool ForceSave = false;
-        public static bool DoBackup = false;
-
+        public static bool isBackuping = false;
         private static string logPath;
         private static readonly string[] AutoSaveState = {"关闭", "启用"};
 
@@ -160,17 +159,39 @@ namespace Sth4nothing.SLManager
                                            | BindingFlags.Static
                                            | BindingFlags.NonPublic
                                            | BindingFlags.Public;
-
+        /// <summary>
+        /// 反射执行方法
+        /// </summary>
+        /// <param name="instance">类实例(静态方法则为null)</param>
+        /// <param name="method">方法名</param>
+        /// <param name="args">方法的参数类型列表</param>
+        /// <typeparam name="T1">类</typeparam>
+        /// <typeparam name="T2">返回值类型</typeparam>
+        /// <returns></returns>
         public static T2 Invoke<T1, T2>(T1 instance, string method, params object[] args)
         {
             return (T2) typeof(T1).GetMethod(method, Flags)?.Invoke(instance, args);
         }
-
+        /// <summary>
+        /// 反射执行方法
+        /// </summary>
+        /// <param name="instance">类实例(静态方法则为null)</param>
+        /// <param name="method">方法名</param>
+        /// <param name="args">方法的参数类型列表</param>
+        /// <typeparam name="T1">类</typeparam>
         public static void Invoke<T1>(T1 instance, string method, params object[] args)
         {
             typeof(T1).GetMethod(method, Flags)?.Invoke(instance, args);
         }
-
+        /// <summary>
+        /// 反射执行方法
+        /// </summary>
+        /// <param name="instance">类实例(静态方法则为null)</param>
+        /// <param name="method">方法名</param>
+        /// <param name="argTypes">方法的参数类型列表</param>
+        /// <param name="args">参数</param>
+        /// <typeparam name="T">类</typeparam>
+        /// <returns>函数的返回值(void则返回null)</returns>
         public static object Invoke<T>(T instance, string method, System.Type[] argTypes, params object[] args)
         {
             argTypes = argTypes ?? new System.Type[0];
@@ -190,15 +211,140 @@ namespace Sth4nothing.SLManager
 
             return methods.First()?.Invoke(instance, args);
         }
-
+        /// <summary>
+        /// 反射获取类字段的值
+        /// </summary>
+        /// <param name="instance">类实例(静态字段则为null)</param>
+        /// <param name="field">字段名</param>
+        /// <typeparam name="T1">类</typeparam>
+        /// <typeparam name="T2">返回值类型</typeparam>
+        /// <returns>字段的值</returns>
         public static T2 GetValue<T1, T2>(T1 instance, string field)
         {
             return (T2) typeof(T1).GetField(field, Flags)?.GetValue(instance);
         }
-
+        /// <summary>
+        /// 反射获取类字段的值
+        /// </summary>
+        /// <param name="instance">类实例(静态字段则为null)</param>
+        /// <param name="field">字段名</param>
+        /// <typeparam name="T">类</typeparam>
+        /// <returns>字段的值</returns>
         public static object GetValue<T>(T instance, string field)
         {
             return typeof(T).GetField(field, Flags)?.GetValue(instance);
         }
+        /// <summary>
+        /// 反射设置类字段的值
+        /// </summary>
+        /// <param name="instance">类实例(静态字段则为null)</param>
+        /// <param name="field">字段名</param>
+        /// <param name="value">设置的字段的值</param>
+        /// <typeparam name="T">类</typeparam>
+        public static void SetValue<T>(T instance, string field, object value)
+        {
+            typeof(T).GetField(field, Flags)?.SetValue(instance, value);
+        }
+        public static void SetProperty<T>(T instance, string property, object value)
+        {
+            typeof(T).GetProperty(property, Flags)?.SetValue(instance, value);
+        }
+        public static T2 GetProperty<T1, T2>(T1 instance, string property)
+        {
+            return (T2) typeof(T1).GetProperty(property, Flags)?.GetValue(instance);
+        }
+    }
+
+    /// <summary>
+    /// 修正Ionic.Zip.OffsetStream的错误
+    /// </summary>
+    internal class OffsetStream : Stream, IDisposable
+    {
+        public OffsetStream(Stream s)
+        {
+            this._originalPosition = s.Position;
+            this._innerStream = s;
+        }
+        public override int Read(byte[] buffer, int offset, int count)
+        {
+            return this._innerStream.Read(buffer, offset, count);
+        }
+        public override void Write(byte[] buffer, int offset, int count)
+        {
+            throw new NotImplementedException();
+        }
+        public override bool CanRead
+        {
+            get
+            {
+                return this._innerStream.CanRead;
+            }
+        }
+        public override bool CanSeek
+        {
+            get
+            {
+                return this._innerStream.CanSeek;
+            }
+        }
+        public override bool CanWrite
+        {
+            get
+            {
+                return false;
+            }
+        }
+        public override void Flush()
+        {
+            this._innerStream.Flush();
+        }
+        /// <summary>
+        /// error 1
+        /// </summary>
+        /// <value></value>
+        public override long Length
+        {
+            get
+            {
+                return this._innerStream.Length - this._originalPosition;
+            }
+        }
+        public override long Position
+        {
+            get
+            {
+                return this._innerStream.Position - this._originalPosition;
+            }
+            set
+            {
+                this._innerStream.Position = this._originalPosition + value;
+            }
+        }
+        /// <summary>
+        /// error 2
+        /// </summary>
+        /// <param name="offset"></param>
+        /// <param name="origin"></param>
+        /// <returns></returns>
+        public override long Seek(long offset, SeekOrigin origin)
+        {
+            return this._innerStream.Seek(offset + (origin == SeekOrigin.Begin ? this._originalPosition : 0), origin) - this._originalPosition;
+        }
+        public override void SetLength(long value)
+        {
+            throw new NotImplementedException();
+        }
+
+        void IDisposable.Dispose()
+        {
+            this.Close();
+        }
+        public override void Close()
+        {
+            base.Close();
+        }
+
+        private readonly long _originalPosition;
+        private readonly Stream _innerStream;
     }
 }

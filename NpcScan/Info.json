@@ -1,3 +1,13 @@
+<<<<<<< HEAD
+﻿{
+  "Id": "NpcScan",
+  "DisplayName": "NpcScan",
+  "Author": "撒哈拉来的企鹅/沉浮山水/UnQ/inpayh/ciwei100000",
+  "Version": "1.8.1",
+  "AssemblyName": "NpcScan.dll",
+  "EntryMethod": "NpcScan.Main.Load"
+}
+=======
 ﻿{
   "Id": "NpcScan",
   "DisplayName": "NpcScan",
@@ -6,3 +16,4 @@
   "AssemblyName": "NpcScan.dll",
   "EntryMethod": "NpcScan.Main.Load"
 }
+>>>>>>> master

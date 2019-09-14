@@ -76,10 +76,10 @@ namespace Majordomo
         public static Settings settings;
         public static UnityModManager.ModEntry.ModLogger Logger;
         public static string resBasePath;
+        public static GetSpritesInfoAsset getSpritesInfoAsset;
         public const string MOD_ID = "Majordomo";
 
         private static readonly Dictionary<string, FloatField> floatFields = new Dictionary<string, FloatField>();
-
 
         public static bool Load(UnityModManager.ModEntry modEntry)
         {
@@ -94,6 +94,9 @@ namespace Majordomo
             Main.settings = Settings.Load<Settings>(modEntry);
 
             resBasePath = System.IO.Path.Combine(modEntry.Path, "resources");
+
+            var dynamicSetSprite = SingletonObject.getInstance<DynamicSetSprite>();
+            getSpritesInfoAsset = (GetSpritesInfoAsset) Traverse.Create(dynamicSetSprite).Field("gsInfoAsset").GetValue();
 
             modEntry.OnToggle = Main.OnToggle;
             modEntry.OnGUI = Main.OnGUI;
@@ -283,7 +286,7 @@ namespace Majordomo
             if (TurnEvent.IsResourcesRegistered()) return;
 
             string eventImagePath = Path.Combine(Path.Combine(Main.resBasePath, "Texture"), $"{TurnEvent.IMAGE_NAME}.png");
-            bool isSuccess = ResourceLoader.AppendSprite(ref GetSprites.instance.trunEventImage, eventImagePath);
+            bool isSuccess = ResourceLoader.AppendSprite("trunEventImage", eventImagePath);
             if (!isSuccess) throw new Exception($"Failed to append sprite: {eventImagePath}");
 
             TurnEvent.eventId = ResourceLoader.AppendRow(DateFile.instance.trunEventDate,
@@ -295,6 +298,8 @@ namespace Majordomo
                     [98] = "${" + TurnEvent.IMAGE_NAME + "}",
                     [99] = "您的管家禀告了如下收获：",
                 });
+
+            UnityEngine.Debug.Log("Resources of TurnEvent registered.");
         }
 
 
@@ -311,10 +316,10 @@ namespace Majordomo
             var data = DateFile.instance.trunEventDate[TurnEvent.eventId];
             int spriteId = int.Parse(data[98]);
 
-            if (GetSprites.instance.trunEventImage.Length <= spriteId) return false;
+            if (Main.getSpritesInfoAsset.trunEventImage.Length <= spriteId) return false;
 
-            var sprite = GetSprites.instance.trunEventImage[spriteId];
-            if (sprite.name != TurnEvent.IMAGE_NAME) return false;
+            var spriteName = Main.getSpritesInfoAsset.trunEventImage[spriteId];
+            if (spriteName != TurnEvent.IMAGE_NAME) return false;
 
             return true;
         }
@@ -369,9 +374,9 @@ namespace Majordomo
     /// <summary>
     /// Patch: 注册过月事件资源（在其他 mod 之后注册）
     /// </summary>
-    [HarmonyPatch(typeof(UIDate), "Start")]
+    [HarmonyPatch(typeof(EnterGame), "EnterWorld")]
     [HarmonyPriority(Priority.Last)]
-    public static class Loading_LoadScene_DynamicallyLoadResources
+    public static class EnterGame_EnterWorld_RegisterTurnEvent
     {
         static void Postfix()
         {
@@ -383,10 +388,10 @@ namespace Majordomo
 
 
     /// <summary>
-    /// Patch: 展示过月事件
+    /// Patch: 保存过月事件
     /// </summary>
-    [HarmonyPatch(typeof(UIDate), "SetTrunChangeWindow")]
-    public static class UIDate_SetTrunChangeWindow_OnChangeTurn
+    [HarmonyPatch(typeof(UIDate), "SaveTurnChangeEvent")]
+    public static class UIDate_SaveTurnChangeEvent_OnChangeTurn
     {
         private static bool Prefix(UIDate __instance)
         {
@@ -457,8 +462,8 @@ namespace Majordomo
     /// <summary>
     /// Patch: 保存存档时保存数据
     /// </summary>
-    [HarmonyPatch(typeof(SaveDateFile), "SaveSaveDate")]
-    public static class SaveDateFile_SaveSaveDate_SaveData
+    [HarmonyPatch(typeof(DateFile.SaveDate), "FillDate")]
+    public static class DateFile_SaveDate_FillDate_SaveData
     {
         static bool Prefix()
         {

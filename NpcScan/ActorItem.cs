@@ -163,6 +163,7 @@ namespace NpcScan
             ActorName = DateFile.instance.GetActorName(npcId);
             SamsaraNames = GetSamsaraNames(npcId);
 
+<<<<<<< HEAD
             // 初始化缓存
             for (int i = 0; i < intCache.Length; i++)
                 intCache[i] = -1;

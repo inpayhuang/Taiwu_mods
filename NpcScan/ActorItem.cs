@@ -145,6 +145,7 @@ namespace NpcScan
         /// <summary>
         /// 角色信息类构造函数
         /// </summary>
+<<<<<<< HEAD
         /// <param name="npcId"></param>
         /// <param name="ui"></param>
         /// <remarks>
@@ -154,6 +155,41 @@ namespace NpcScan
         /// <see cref="DateFile.GetActorFeature(int)"/><see cref="Patch.DateFile_GetActorFeature_Patch"/>中已经将该方法修改为线程安全
         /// </remarks>
         public ActorItem(int npcId, UI ui)
+=======
+        private int totalrank;
+
+        private int str;
+        private int con;
+        private int agi;
+        private int bon;
+        private int inv;
+        private int pat;
+
+        private int age;
+        private int gender;
+        private string genderText;
+        private int charm;
+        private int samsara;
+        private int health;
+        //private int cv;
+
+        private string place;
+        private string actorName;
+        private string charmText;
+        private string samsaraNames;
+
+        private string gn;
+        private int groupid;
+        private int gangLevel;
+        private int gangValueId;
+        private string gangLevelText;
+
+        private string shopName;
+
+        private int[] actorResources;
+
+        public ActorItem(int npcId, NpcScan.UI ui)
+>>>>>>> master
         {
             _ui = ui;
             this.npcId = npcId;
@@ -167,6 +203,46 @@ namespace NpcScan
             // 初始化缓存
             for (int i = 0; i < intCache.Length; i++)
                 intCache[i] = -1;
+=======
+            this.isRank = _ui.rankmode ? true : false;
+
+            this.str = int.Parse(DateFile.instance.GetActorDate(npcId, 61, !_ui.getreal));
+            this.con = int.Parse(DateFile.instance.GetActorDate(npcId, 62, !_ui.getreal));
+            this.agi = int.Parse(DateFile.instance.GetActorDate(npcId, 63, !_ui.getreal));
+            this.bon = int.Parse(DateFile.instance.GetActorDate(npcId, 64, !_ui.getreal));
+            this.inv = int.Parse(DateFile.instance.GetActorDate(npcId, 65, !_ui.getreal));
+            this.pat = int.Parse(DateFile.instance.GetActorDate(npcId, 66, !_ui.getreal));
+
+            this.age = int.Parse(DateFile.instance.GetActorDate(npcId, 11, false));
+            this.gender = int.Parse(DateFile.instance.GetActorDate(npcId, 14, false));
+            this.genderText = this.gender == 1 ? "男" : "女";
+            this.charm = int.Parse(DateFile.instance.GetActorDate(npcId, 15, !_ui.getreal));
+            this.samsara = DateFile.instance.GetLifeDateList(npcId, 801, false).Count;
+            this.health = int.Parse(DateFile.instance.GetActorDate(npcId, 26, false)) == 0 ? ActorMenu.instance.Health(npcId) : 0;
+            //this.cv = ui.charmValue == 0 ? 0 : -999;
+
+            this.place = _getPlace(npcId);
+            this.actorName = DateFile.instance.GetActorName(npcId);
+            this.charmText = _getCharmText(npcId);
+            this.samsaraNames = _getSamsaraNames(npcId);
+
+            this.gn = DateFile.instance.massageDate[9][0].Split(new char[] { '|' })[DateFile.instance.GetActorGoodness(npcId)];
+            //门派ID
+            this.groupid = int.Parse(DateFile.instance.GetActorDate(npcId, 19, false));
+            //身份等级
+            this.gangLevel = int.Parse(DateFile.instance.GetActorDate(npcId, 20, false));
+            this.gangValueId = DateFile.instance.GetGangValueId(groupid, gangLevel);
+            //性别标识
+            int key2 = (gangLevel >= 0) ? 1001 : (1001 + int.Parse(DateFile.instance.GetActorDate(npcId, 14, false)));
+            //身份gangLevelText
+            this.gangLevelText = DateFile.instance.SetColoer((gangValueId != 0) ? (20011 - Mathf.Abs(gangLevel)) : 20002, DateFile.instance.presetGangGroupDateValue[gangValueId][key2], false);
+
+            //商会信息获取
+            this.shopName = _getShopName(npcId,key2);
+
+            actorResources = ActorMenu.instance.GetActorResources(npcId);
+
+>>>>>>> master
             if (isRank)
             {
                 // 初始化综合评分计算加权
@@ -287,6 +363,7 @@ namespace NpcScan
         /// </summary>
         private void AddCheck()
         {
+<<<<<<< HEAD
             // 997为人物模板, 当大于100是特殊剧情人物，跳过不处理, 详见TextAsset中的PresetActor_Date
             // 如: 2001:莫女 2002:大岳瑶常 2003:九寒 2004:金凰儿 2005:衣以候 2006:卫起 2007:以向 2008:血枫 2009:术方
             if (int.Parse(DateFile.instance.actorsDate[npcId][997]) > 100) return;
@@ -333,11 +410,23 @@ namespace NpcScan
                 finally { Unlock(); }
                 if (result) return;
             }
+=======
+            // 997真实值判断。 如果是boss（相枢分身）直接返回
+            // 真实ID为200开头 则为boss PS: 2001:莫女 2002:大岳瑶常 2003:九寒 2004:金凰儿 2005:衣以候 2006:卫起 2007:以向 2008:血枫 2009:术方
+            if (DateFile.instance.actorsDate[this.npcId][997].StartsWith("200")) return;
+
+            if (this.age < _ui.minage) return;
+            if (this.health < _ui.healthValue) return;
+            if (this.samsara < _ui.samsaraCount) return;
+            if (_ui.maxage != 0 && this.age > _ui.maxage) return;
+            if (_ui.genderValue != 0 && this.gender != _ui.genderValue) return;
+>>>>>>> master
 
             // 排行榜模式以下搜索条件无效
             // 我至今不知道排行榜模式有啥用？都能排序了都。
             if (!isRank)
             {
+<<<<<<< HEAD
                 if (_ui.StrValue > 0)
                 {
                     bool result = false;
@@ -417,6 +506,54 @@ namespace NpcScan
                     }
                 }
             }
+=======
+                if (this.inv < _ui.intValue) return;
+                if (this.str < _ui.strValue) return;
+                if (this.con < _ui.conValue) return;
+                if (this.agi < _ui.agiValue) return;
+                if (this.bon < _ui.bonValue) return;
+                if (this.pat < _ui.patValue) return;
+                //if (this.charm < this.cv) return;
+                if (this.charm < _ui.charmValue && _ui.charmValue != 0) return;
+
+                if (GetLevelValue(this.npcId, 0, 1) < _ui.gongfa[0]) return;
+                if (GetLevelValue(this.npcId, 1, 1) < _ui.gongfa[1]) return;
+                if (GetLevelValue(this.npcId, 1, 1) < _ui.gongfa[1]) return;
+                if (GetLevelValue(this.npcId, 2, 1) < _ui.gongfa[2]) return;
+                if (GetLevelValue(this.npcId, 3, 1) < _ui.gongfa[3]) return;
+                if (GetLevelValue(this.npcId, 4, 1) < _ui.gongfa[4]) return;
+                if (GetLevelValue(this.npcId, 5, 1) < _ui.gongfa[5]) return;
+                if (GetLevelValue(this.npcId, 6, 1) < _ui.gongfa[6]) return;
+                if (GetLevelValue(this.npcId, 7, 1) < _ui.gongfa[7]) return;
+                if (GetLevelValue(this.npcId, 8, 1) < _ui.gongfa[8]) return;
+                if (GetLevelValue(this.npcId, 9, 1) < _ui.gongfa[9]) return;
+                if (GetLevelValue(this.npcId, 10, 1) < _ui.gongfa[10]) return;
+                if (GetLevelValue(this.npcId, 11, 1) < _ui.gongfa[11]) return;
+                if (GetLevelValue(this.npcId, 12, 1) < _ui.gongfa[12]) return;
+                if (GetLevelValue(this.npcId, 13, 1) < _ui.gongfa[13]) return;
+                if (GetLevelValue(this.npcId, 0, 0) < _ui.life[0]) return;
+                if (GetLevelValue(this.npcId, 1, 0) < _ui.life[1]) return;
+                if (GetLevelValue(this.npcId, 2, 0) < _ui.life[2]) return;
+                if (GetLevelValue(this.npcId, 3, 0) < _ui.life[3]) return;
+                if (GetLevelValue(this.npcId, 4, 0) < _ui.life[4]) return;
+                if (GetLevelValue(this.npcId, 5, 0) < _ui.life[5]) return;
+                if (GetLevelValue(this.npcId, 6, 0) < _ui.life[6]) return;
+                if (GetLevelValue(this.npcId, 7, 0) < _ui.life[7]) return;
+                if (GetLevelValue(this.npcId, 8, 0) < _ui.life[8]) return;
+                if (GetLevelValue(this.npcId, 9, 0) < _ui.life[9]) return;
+                if (GetLevelValue(this.npcId, 10, 0) < _ui.life[10]) return;
+                if (GetLevelValue(this.npcId, 11, 0) < _ui.life[11]) return;
+                if (GetLevelValue(this.npcId, 12, 0) < _ui.life[12]) return;
+                if (GetLevelValue(this.npcId, 13, 0) < _ui.life[13]) return;
+                if (GetLevelValue(this.npcId, 14, 0) < _ui.life[14]) return;
+                if (GetLevelValue(this.npcId, 15, 0) < _ui.life[15]) return;
+            }
+
+            if (_ui.actorFeatureText != "" && !ScanFeature(this.npcId, Main.findList, _ui.tarFeature, _ui.tarFeatureOr))
+                return;
+            if (_ui.actorGongFaText != "" && !ScanGongFa(this.npcId, Main.GongFaList, _ui.tarGongFaOr))
+                return;
+>>>>>>> master
 
             // gangLevel 门派地位 若为负 则地位由婚姻带来的。
             if (_ui.HighestLevel > 1)
